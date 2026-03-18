@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuestro Diario de Cartas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Lora:ital@1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <main class="main-container">
+        
+        <div class="widgets-section">
+            <div class="media-widget youtube-widget">
+                <iframe id="youtube-frame" width="100%" height="230" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+            <div class="media-widget spotify-widget">
+                <iframe id="spotify-frame" style="border-radius:12px" src="" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            </div>
+        </div>
+
+        <div class="letter-section">
+            <div class="envelope-wrapper">
+                <div class="envelope-back"></div>
+                
+                <div class="letter">
+                    <div class="text" id="letter-content">
+                        </div>
+                    <button id="expand-btn" class="expand-btn" title="Leer en pantalla completa">⛶</button>
+                </div>
+                
+                <div class="envelope-front"></div>
+                <div class="envelope-flap"></div>
+                <div class="seal-star">
+                    <span class="star-icon">✪</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="calendar-section">
+            <div class="calendar">
+                <div class="calendar-header">
+                    <h3 id="month-year">Mes Año</h3>
+                </div>
+                <div class="weekdays">
+                    <div>Do</div><div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sa</div>
+                </div>
+                <div class="days" id="calendar-days"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="verse-container">
+        <p class="verse">"Deléitate asimismo en el Señor, y él te concederá las peticiones de tu corazón."</p>
+        <p class="reference">— Salmos 37:4</p>
+    </footer>
+
+    <div id="letter-modal" class="modal">
+        <div class="modal-content">
+            <button id="close-modal" class="close-btn" title="Cerrar">✖</button>
+            <div id="modal-text-content" class="text"></div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
