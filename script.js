@@ -33,15 +33,13 @@ const closeModal = document.getElementById('close-modal');
 const modalTextContent = document.getElementById('modal-text-content');
 
 // ==========================================
-// 💌 3. LÓGICA DE APERTURA (NUEVA ANIMACIÓN)
+// 💌 3. LÓGICA DE LA CARTA MAGICA
 // ==========================================
 envelope.addEventListener('click', () => { 
     if (!envelope.classList.contains('is-open')) {
-        // Abrir
         envelope.classList.remove('close-anim');
         envelope.classList.add('open-anim', 'is-open');
     } else {
-        // Cerrar
         envelope.classList.remove('open-anim', 'is-open');
         envelope.classList.add('close-anim');
     }
@@ -50,7 +48,6 @@ envelope.addEventListener('click', () => {
 function cargarDia(fechaStr, elementoDia) {
     const datos = diarioCartas[fechaStr];
     if (datos) {
-        // Si estaba abierto, cerramos con la animación suave
         if (envelope.classList.contains('is-open')) {
             envelope.classList.remove('open-anim', 'is-open');
             envelope.classList.add('close-anim');
@@ -59,7 +56,6 @@ function cargarDia(fechaStr, elementoDia) {
         document.querySelectorAll('.days div').forEach(d => d.classList.remove('active'));
         if (elementoDia) elementoDia.classList.add('active');
 
-        // Espera 1 segundo (lo que dura la animación de guardado) para cambiar el texto
         setTimeout(() => {
             letterContent.className = 'text'; 
             const cantidadLetras = datos.texto.length;
@@ -70,16 +66,11 @@ function cargarDia(fechaStr, elementoDia) {
             letterContent.innerHTML = datos.texto;
             ytFrame.src = datos.youtube || "";
             spFrame.src = datos.spotify || "";
-            
-            // Regresa el scroll del texto arriba del todo
             letterContent.scrollTop = 0;
         }, 1000);
     }
 }
 
-// ==========================================
-// 📅 4. CALENDARIO Y EXTRAS
-// ==========================================
 function generarCalendario() {
     const date = new Date();
     const year = date.getFullYear();
@@ -144,5 +135,79 @@ onValue(dbRef, (snapshot) => {
     } else {
         diarioCartas = {};
         generarCalendario(); 
+    }
+});
+
+// ==========================================
+// 🤫 4. SORPRESAS Y EFECTOS VISUALES
+// ==========================================
+const svgFlorAmarilla = `
+<svg viewBox="0 0 100 100" class="vector-flower header-flower" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="12" fill="#f5cc3f"/>
+  <path d="M50 0 C60 20, 80 20, 100 0 C80 -20, 60 -20, 50 0 Z" fill="#ffe066" transform="rotate(0 50 50)"/>
+  <path d="M50 0 C60 20, 80 20, 100 0 C80 -20, 60 -20, 50 0 Z" fill="#ffe066" transform="rotate(45 50 50)"/>
+  <path d="M50 0 C60 20, 80 20, 100 0 C80 -20, 60 -20, 50 0 Z" fill="#ffe066" transform="rotate(90 50 50)"/>
+  <path d="M50 0 C60 20, 80 20, 100 0 C80 -20, 60 -20, 50 0 Z" fill="#ffe066" transform="rotate(135 50 50)"/>
+  <path d="M50 0 C60 20, 80 20, 100 0 C80 -20, 60 -20, 50 0 Z" fill="#ffe066" transform="rotate(180 50 50)"/>
+  <path d="M50 0 C60 20, 80 20, 100 0 C80 -20, 60 -20, 50 0 Z" fill="#ffe066" transform="rotate(225 50 50)"/>
+  <path d="M50 0 C60 20, 80 20, 100 0 C80 -20, 60 -20, 50 0 Z" fill="#ffe066" transform="rotate(270 50 50)"/>
+  <path d="M50 0 C60 20, 80 20, 100 0 C80 -20, 60 -20, 50 0 Z" fill="#ffe066" transform="rotate(315 50 50)"/>
+</svg>
+`;
+
+const surpriseToast = document.getElementById('surprise-toast');
+const flowerShower = document.getElementById('flower-shower');
+
+function iniciarLluviaFlores() {
+    for (let i = 0; i < 30; i++) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = svgFlorAmarilla.trim();
+        const svgElement = tempDiv.firstChild;
+        svgElement.style.left = Math.random() * 100 + 'vw';
+        const size = Math.random() * 25 + 20 + 'px';
+        svgElement.style.width = size;
+        svgElement.style.height = size;
+        const duration = Math.random() * 4 + 4 + 's';
+        const delay = Math.random() * 3 + 's';
+        svgElement.style.animation = `floatFlower ${duration} linear ${delay} forwards`;
+        flowerShower.appendChild(svgElement);
+        setTimeout(() => { svgElement.remove(); }, (parseFloat(duration) + parseFloat(delay)) * 1000);
+    }
+}
+
+const dbSorpresasRef = ref(db, 'sorpresas');
+onValue(dbSorpresasRef, (snapshot) => {
+    const sorpresasEnLaNube = snapshot.val();
+    
+    if (sorpresasEnLaNube) {
+        const hoyFecha = new Date();
+        const mesDiaHoy = String(hoyFecha.getMonth() + 1).padStart(2, '0') + '-' + String(hoyFecha.getDate()).padStart(2, '0');
+        const sorpresaDeHoy = sorpresasEnLaNube[mesDiaHoy];
+
+        if (sorpresaDeHoy) {
+            surpriseToast.innerHTML = '<button id="close-toast" class="close-toast" title="Cerrar">✖</button>';
+            const toastHeader = document.createElement('div');
+            toastHeader.className = 'toast-header';
+            
+            if (sorpresaDeHoy.esDiaDeFlores) {
+                toastHeader.innerHTML = svgFlorAmarilla + `<h3>${sorpresaDeHoy.titulo}</h3>` + svgFlorAmarilla;
+            } else {
+                toastHeader.innerHTML = `<h3>${sorpresaDeHoy.titulo}</h3>`;
+            }
+            
+            surpriseToast.appendChild(toastHeader);
+            const toastMessageElement = document.createElement('p');
+            toastMessageElement.innerText = sorpresaDeHoy.mensaje;
+            surpriseToast.appendChild(toastMessageElement);
+
+            document.getElementById('close-toast').addEventListener('click', () => {
+                surpriseToast.classList.remove('show');
+            });
+            
+            setTimeout(() => {
+                surpriseToast.classList.add('show');
+                if (sorpresaDeHoy.esDiaDeFlores) { iniciarLluviaFlores(); }
+            }, 1500);
+        }
     }
 });
