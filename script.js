@@ -20,6 +20,12 @@ let sorpresasGuardadas = {};
 let diaActualSeleccionado = null; 
 let sorpresaDeHoyMostrada = false; 
 
+// Variables para navegar meses
+let currentDate = new Date();
+let currentMonth = currentDate.getMonth();
+let currentYear = currentDate.getFullYear();
+let isFirstLoad = true;
+
 const envelope = document.querySelector('.envelope-wrapper');
 const letterContent = document.getElementById('letter-content');
 const ytFrame = document.getElementById('youtube-frame');
@@ -60,12 +66,10 @@ emojiBar.addEventListener('click', (e) => {
     if (e.target.classList.contains('emoji-btn')) {
         const emoji = e.target.innerText;
         
-        // ¡Magia! Guarda qué emoji se presionó en Firebase
         if (diaActualSeleccionado) {
             push(ref(db, `cartas/${diaActualSeleccionado}/reacciones`), { emoji: emoji, tiempo: Date.now() });
         }
 
-        // Lanza la animación visual
         for (let i = 0; i < 6; i++) {
             setTimeout(() => {
                 const el = document.createElement('div');
@@ -187,30 +191,27 @@ function cargarDia(fechaStr, elementoDia) {
     }
 }
 
+// ==========================================
+// CALENDARIO CON NAVEGACIÓN
+// ==========================================
 function generarCalendario() {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = date.getMonth(); 
-    
-    const todayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const todayNum = new Date(year, month, date.getDate()).getTime();
+    const todayDate = new Date();
+    const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+    const todayNum = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate()).getTime();
 
     const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    document.getElementById("month-year").innerText = `${monthNames[month]} ${year}`;
+    document.getElementById("month-year").innerText = `${monthNames[currentMonth]} ${currentYear}`;
 
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const daysContainer = document.getElementById("calendar-days");
     daysContainer.innerHTML = ""; 
 
     for (let i = 0; i < firstDay; i++) { daysContainer.innerHTML += `<div></div>`; }
 
-    let ultimaFechaPermitida = null;
-    let debeCargarDiaInicial = !diaActualSeleccionado; 
-
     for (let i = 1; i <= daysInMonth; i++) {
-        const fechaIteracion = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        const fechaNum = new Date(year, month, i).getTime();
+        const fechaIteracion = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const fechaNum = new Date(currentYear, currentMonth, i).getTime();
         
         let diaHTML = document.createElement('div');
         diaHTML.innerText = i;
@@ -220,7 +221,6 @@ function generarCalendario() {
             if (diarioCartas[fechaIteracion]) {
                 diaHTML.classList.add('has-letter');
                 diaHTML.addEventListener('click', () => { cargarDia(fechaIteracion, diaHTML); });
-                ultimaFechaPermitida = fechaIteracion;
                 if (fechaIteracion === diaActualSeleccionado) diaHTML.classList.add('active');
             } else {
                 diaHTML.classList.add('empty-day');
@@ -232,24 +232,59 @@ function generarCalendario() {
         if (fechaIteracion === todayStr) {
             diaHTML.classList.add('today');
             diaHTML.innerHTML += `<span class="star-today">★</span>`;
-            if (diarioCartas[todayStr] && debeCargarDiaInicial) { 
-                cargarDia(todayStr, diaHTML); 
-                debeCargarDiaInicial = false;
-            }
         }
         daysContainer.appendChild(diaHTML);
     }
 
-    if (debeCargarDiaInicial && ultimaFechaPermitida) {
-        cargarDia(ultimaFechaPermitida, null);
-    } else if (diaActualSeleccionado && diarioCartas[diaActualSeleccionado]) {
+    if (diaActualSeleccionado && diarioCartas[diaActualSeleccionado]) {
         renderComentarios(diarioCartas[diaActualSeleccionado].comentarios);
     }
 }
 
+// Botones de mes
+document.getElementById('prev-month').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    generarCalendario();
+});
+
+document.getElementById('next-month').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    generarCalendario();
+});
+
+
 onValue(ref(db, 'cartas'), (snapshot) => {
     const data = snapshot.val();
-    if (data) { diarioCartas = data; generarCalendario(); } 
+    if (data) { 
+        diarioCartas = data; 
+        
+        if (isFirstLoad) {
+            const todayNum = new Date().getTime();
+            let latestDate = null;
+            
+            Object.keys(diarioCartas).forEach(dateStr => {
+                const [y, m, d] = dateStr.split('-');
+                const dateNum = new Date(y, m-1, d).getTime();
+                if (dateNum <= todayNum) {
+                    if (!latestDate || dateStr > latestDate) {
+                        latestDate = dateStr;
+                    }
+                }
+            });
+
+            if (latestDate) {
+                const [y, m] = latestDate.split('-');
+                currentYear = parseInt(y);
+                currentMonth = parseInt(m) - 1;
+                cargarDia(latestDate, null);
+            }
+            isFirstLoad = false;
+        }
+        
+        generarCalendario(); 
+    } 
 });
 
 const expandBtn = document.getElementById('expand-btn');
@@ -352,8 +387,6 @@ function checkWordle() {
 // ==========================================
 // 🤫 7. SORPRESAS MAGICAS (FLORES Y ESTRELLAS)
 // ==========================================
-
-// El jardín completo en HTML sin los corazones
 const htmlJardinFlores = `
   <div class="flowers">
     <div class="flower flower--1"><div class="flower__leafs flower__leafs--1"><div class="flower__leaf flower__leaf--1"></div><div class="flower__leaf flower__leaf--2"></div><div class="flower__leaf flower__leaf--3"></div><div class="flower__leaf flower__leaf--4"></div><div class="flower__white-circle"></div><div class="flower__light flower__light--1"></div><div class="flower__light flower__light--2"></div><div class="flower__light flower__light--3"></div><div class="flower__light flower__light--4"></div><div class="flower__light flower__light--5"></div><div class="flower__light flower__light--6"></div><div class="flower__light flower__light--7"></div><div class="flower__light flower__light--8"></div></div><div class="flower__line"><div class="flower__line__leaf flower__line__leaf--1"></div><div class="flower__line__leaf flower__line__leaf--2"></div><div class="flower__line__leaf flower__line__leaf--3"></div><div class="flower__line__leaf flower__line__leaf--4"></div><div class="flower__line__leaf flower__line__leaf--5"></div><div class="flower__line__leaf flower__line__leaf--6"></div></div></div>
@@ -374,7 +407,6 @@ const flowerShower = document.getElementById('flower-shower');
 
 function iniciarJardinFlores() {
     flowerShower.innerHTML = htmlJardinFlores;
-    // Ocultar jardín después de 15 segundos
     setTimeout(()=> { flowerShower.innerHTML = ''; }, 15000);
 }
 
@@ -403,12 +435,11 @@ function mostrarSorpresa(sorpresa) {
         
         document.getElementById('close-toast').onclick = () => {
             surpriseToast.classList.remove('show');
-            flowerShower.innerHTML = ''; // Detiene la lluvia al cerrar
+            flowerShower.innerHTML = ''; 
         };
         
         surpriseToast.classList.add('show');
         
-        // Dependiendo de si es el día de las flores o no
         if(sorpresa.esDiaDeFlores) {
             iniciarJardinFlores();
         } else {
